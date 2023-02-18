@@ -508,7 +508,7 @@ if __name__ == '__main__':
     #////// init
     #没有输入任何参数就使用默认的 "m3u8_input.txt" 文件进行下载;
     #//////
-    os.chdir(os.path.dirname(__file__))
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     if(len(sys.argv) > 1):
         main(sys.argv[1:])
     else:
