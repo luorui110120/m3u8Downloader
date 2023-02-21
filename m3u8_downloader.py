@@ -1,8 +1,8 @@
-# 在python3下测试
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-# author hestyle
-# desc 必须在终端直接执行，不能在pycharm等IDE中直接执行，否则看不到动态进度条效果
+# -*- coding: utf-8 -*-
+# Author: By 空道
+
+
 
 import os
 import sys
@@ -465,7 +465,7 @@ def defaultMain2():
         if rowData == "":
             break
         m3u8Info = rowData.split(',')
-        os.system("python3 %s -i %s -o %s"%(__file__,m3u8Info[1], m3u8Info[0]))
+        os.system('python3 "%s" -i "%s" -o "%s"'%(__file__,m3u8Info[1], m3u8Info[0]))
 
 def main(argv):
     global title
