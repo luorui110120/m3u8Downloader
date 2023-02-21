@@ -77,6 +77,13 @@ downloadedBytes = 0
 # download speed
 downloadSpeed = 0
 
+
+def hexStringTobytes(str):
+    if sys.version > '3':
+        str = str.replace(" ", "")
+        return bytes.fromhex(str)
+    else:
+        return str.decode('hex')
 # 1、下载m3u8文件
 def getM3u8Info():
     global m3u8Url
@@ -352,7 +359,13 @@ def m3u8VideoDownloader():
             return False
         # 判断是否有偏移量
         if key.iv is not None:
-            cryptor = AES.new(bytes(keyText, encoding='utf8'), AES.MODE_CBC, bytes(key.iv, encoding='utf8'))
+            aesiv = None
+            if(key.iv[0:2] == '0x'):
+                aesiv = hexStringTobytes(key.iv[2:])
+            else:
+                aesiv =  bytes(key.iv, encoding='utf8')
+                
+            cryptor = AES.new(bytes(keyText, encoding='utf8'), AES.MODE_CBC, aesiv)
         else:
             cryptor = AES.new(bytes(keyText, encoding='utf8'), AES.MODE_CBC, bytes(keyText, encoding='utf8'))
     # 3、下载ts
