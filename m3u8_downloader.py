@@ -201,10 +201,17 @@ def mutliDownloadTs(playlist):
     return True
 # 4、下载单个ts playlists[index]
 def downloadTs(playlist, index):
-    ##### 奈非 添加了 png 的头格式,我们这里要把它去除掉
-    png_magic_head=bytes([
-    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00 ])
+    magic_head = [bytes([0x47,0x49,0x46]),    ###gif
+                  bytes([0x70,0x6e,0x67]),    ###png
+                  bytes([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46]), ####jpeg
+                  ]
+    #######通过查找下面两个特征码来定位 ts 的偏移;
+    #### FFmpeg
+    ffpmeg_magic = bytes([0x46, 0x46, 0x6D, 0x70, 0x65, 0x67])
+    #### FFFF
+    FFFF_magic = b'\xff' * 0x20
+
+    find_head_flags = False
     ##
     global logFile
     global sumCount
@@ -230,10 +237,24 @@ def downloadTs(playlist, index):
                 downloadedBytes += actual_length
                 if expected_length > actual_length:
                     raise Exception("分片下载不完整")
-                if None == re.match(png_magic_head, response.content):
-                    outputFp.write(response.content)
+                
+                #### 判断是否是图片的文件头
+                for magickey in magic_head:
+                    magiclen = len(magickey)
+                    find_head_flags = response.content[0:magiclen] == magickey
+                    if find_head_flags:
+                        break
+                ###删除图片文件头
+                if find_head_flags:
+                    findres = response.content.find(ffpmeg_magic)
+                    if findres < 0:
+                        findres = response.content.find(FFFF_magic)
+                    if findres > 0:
+                        outputFp.write(response.content[findres:])
+                    else:
+                        outputFp.write(response.content)
                 else:
-                    outputFp.write(response.content[0x78:])
+                    outputFp.write(response.content)
                 doneCount += 1
                 printProcessBar(sumCount, doneCount, 50, isPrintDownloadSpeed=True)
                 logFile.write("\t分片{0:0>8} url = {1} 下载成功！".format(index, tsUrl))
