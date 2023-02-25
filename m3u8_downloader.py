@@ -421,7 +421,12 @@ def donwloadUrl(url_path, outfile):
     global logFile
     global m3u8Url
     global errorM3u8InfoFp
-    title = outfile
+    global saveRootDirPath
+
+    
+    title = os.path.basename(outfile)
+    if os.path.dirname(outfile):
+        saveRootDirPath = os.path.dirname(outfile)
     m3u8Url=url_path
 # title中去除 \  /  :  *  ?  "  <  >  |字符，Windows系统中文件命名不能包含这些字符
     title = title.replace('\\', ' ', sys.maxsize)
