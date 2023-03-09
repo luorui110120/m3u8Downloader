@@ -201,8 +201,10 @@ def mutliDownloadTs(playlist):
     return True
 # 4、下载单个ts playlists[index]
 def downloadTs(playlist, index):
-    magic_head = [bytes([0x47,0x49,0x46]),    ###gif
+    magic_head = [bytes([0x89,0x47,0x49,0x46]),    ###gif
+                  bytes([0x67,0x69,0x66]),    ###GIF
                   bytes([0x70,0x6e,0x67]),    ###png
+                  bytes([0x89,0x50,0x4e,0x47]),    ###PNG
                   bytes([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46]), ####jpeg
                   ]
     #######通过查找下面两个特征码来定位 ts 的偏移;
