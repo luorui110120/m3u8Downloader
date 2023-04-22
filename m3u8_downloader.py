@@ -16,6 +16,7 @@ from Crypto.Cipher import AES
 from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
 import ssl
+from urllib.parse import urlparse
 from urllib.request import urlopen
 
 headers = {
@@ -127,7 +128,9 @@ def getM3u8Info():
         for rowData in response.text.split('\n'):
             # 寻找响应内容的中的m3u8
             if rowData.endswith(".m3u8"):
-                m3u8Url = m3u8Url.replace("index.m3u8", rowData)
+                o = urlparse(m3u8Url)
+                m3u8Url = m3u8Url[0:m3u8Url.find(o.path)] + rowData
+                #m3u8Url = m3u8Url.replace("index.m3u8", rowData)
                 rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
                 return getM3u8Info()
         # 遍历未找到就返回None
@@ -412,8 +415,12 @@ def m3u8VideoDownloader():
     # 5、开始转换成mp4
     print("\t5、开始mp4转换...")
     logFile.write("\t5、开始mp4转换...\n")
-    if not ffmpegConvertToMp4(cachePath + "/cache.flv", saveRootDirPath + "/" + title + ".mp4"):
-        return False
+    ### 当碰到ts 后缀 不转化mp4
+    if title[-4:] == '.flv':
+        os.system('mv ' + cachePath + "/cache.flv" + ' ' + saveRootDirPath + "/" + title)
+    else:
+        if not ffmpegConvertToMp4(cachePath + "/cache.flv", saveRootDirPath + "/" + title + ".mp4"):
+            return False
     # 6.清空cache 文件
     removeTsDir(cachePath)
     return True
