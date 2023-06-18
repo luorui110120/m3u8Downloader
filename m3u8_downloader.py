@@ -19,6 +19,8 @@ import ssl
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
+###关闭警告
+requests.packages.urllib3.disable_warnings()
 headers = {
     "Accept": "*/*",
     #"Connection": "Keep-Alive",
@@ -151,7 +153,7 @@ def getKey(keyUrl):
             return None
         tryCount = tryCount - 1
         try:
-            response = requests.get(keyUrl, headers=headers, timeout=20, allow_redirects=True)
+            response = requests.get(keyUrl, headers=headers, timeout=20, allow_redirects=True,verify=False)
             if response.status_code == 301:
                 nowKeyUrl = response.headers["location"]
                 print("\t{0}重定向至{1}！".format(keyUrl, nowKeyUrl))
@@ -234,7 +236,8 @@ def downloadTs(playlist, index):
         else:
             tsUrl = rootUrlPath + "/" + playlist[index]
         try:
-            response = requests.get(tsUrl, timeout=5, headers=headers, stream=True)
+            #print("tsUrl:" + tsUrl)
+            response = requests.get(tsUrl, timeout=5, headers=headers, stream=True, verify=False)
             if response.status_code == 200:
                 expected_length = int(response.headers.get('Content-Length'))
                 actual_length = len(response.content)
@@ -354,6 +357,7 @@ def m3u8VideoDownloader():
     global cachePath
     global downloadedBytes
     global downloadSpeed
+    global rootUrlPath
     # 1、下载m3u8
     print("\t1、开始下载m3u8...")
     logFile.write("\t1、开始下载m3u8...\n")
