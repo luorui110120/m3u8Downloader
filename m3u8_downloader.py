@@ -106,7 +106,9 @@ def getM3u8Info():
                 print("\t{0}重定向至{1}！".format(m3u8Url, nowM3u8Url))
                 logFile.write("\t{0}重定向至{1}！\n".format(m3u8Url, nowM3u8Url))
                 m3u8Url = nowM3u8Url
-                rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
+                o = urlparse(m3u8Url)
+                rootUrlPath = o.scheme + "://" + o.hostname;
+                #rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
                 continue
             #print(response.headers)
             #print(response.content)
@@ -116,7 +118,9 @@ def getM3u8Info():
             #    raise Exception("m3u8下载不完整")
             print("\t{0}下载成功！".format(m3u8Url))
             logFile.write("\t{0}下载成功！".format(m3u8Url))
-            rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
+            o = urlparse(m3u8Url)
+            rootUrlPath = o.scheme + "://" + o.hostname;
+            #rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
             break
         except:
             print("\t{0}下载失败！正在重试".format(m3u8Url))
@@ -164,6 +168,7 @@ def getKey(keyUrl):
             # actual_length = len(response.content)
             # if expected_length > actual_length:
             #     raise Exception("key下载不完整")
+            print(response.content);
             print("\t{0}下载成功！key = {1}".format(keyUrl, response.content.decode("utf-8")))
             logFile.write("\t{0}下载成功！ key = {1}".format(keyUrl, response.content.decode("utf-8")))
             break
@@ -381,7 +386,9 @@ def m3u8VideoDownloader():
         # 如果key的url是相对路径，加上m3u8Url的路径
         keyUrl = key.uri
         if not keyUrl.startswith("http"):
-            keyUrl = m3u8Url.replace("index.m3u8", keyUrl)
+            o = urlparse(m3u8Url)
+            #keyUrl = m3u8Url.replace("index.m3u8", keyUrl)
+            keyUrl = o.scheme + "://" + o.hostname + keyUrl
         print("\t2、开始下载key...")
         logFile.write("\t2、开始下载key...\n")
         keyText = getKey(keyUrl)
@@ -404,6 +411,7 @@ def m3u8VideoDownloader():
     # 清空bytes计数器
     downloadSpeed = 0
     downloadedBytes = 0
+    #print(tsList)
     if mutliDownloadTs(tsList):
         logFile.write("\tts下载完成---------------------\n")
     # 4、合并ts
