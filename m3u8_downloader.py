@@ -118,9 +118,9 @@ def getM3u8Info():
             #    raise Exception("m3u8下载不完整")
             print("\t{0}下载成功！".format(m3u8Url))
             logFile.write("\t{0}下载成功！".format(m3u8Url))
-            o = urlparse(m3u8Url)
-            rootUrlPath = o.scheme + "://" + o.hostname;
-            #rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
+            #o = urlparse(m3u8Url)
+            #rootUrlPath = o.scheme + "://" + o.hostname;
+            rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
             break
         except:
             print("\t{0}下载失败！正在重试".format(m3u8Url))
@@ -135,7 +135,10 @@ def getM3u8Info():
             # 寻找响应内容的中的m3u8
             if rowData.endswith(".m3u8"):
                 o = urlparse(m3u8Url)
-                m3u8Url = m3u8Url[0:m3u8Url.find(o.path)] + rowData
+                if '/' == rowData[0:1]:
+                    m3u8Url = m3u8Url[0:m3u8Url.find(o.path)] + rowData
+                else:
+                    m3u8Url = m3u8Url[0:m3u8Url.rindex('/')] + '/' + rowData
                 #m3u8Url = m3u8Url.replace("index.m3u8", rowData)
                 rootUrlPath = m3u8Url[0:m3u8Url.rindex('/')]
                 return getM3u8Info()
@@ -169,15 +172,15 @@ def getKey(keyUrl):
             # if expected_length > actual_length:
             #     raise Exception("key下载不完整")
             print(response.content);
-            print("\t{0}下载成功！key = {1}".format(keyUrl, response.content.decode("utf-8")))
-            logFile.write("\t{0}下载成功！ key = {1}".format(keyUrl, response.content.decode("utf-8")))
+            #print("\t{0}下载成功！key = {1}".format(keyUrl, response.content.decode("utf-8")))
+            #logFile.write("\t{0}下载成功！ key = {1}".format(keyUrl, response.content.decode("utf-8")))
             break
         except Exception as exception:
             print(exception)
 
             print("\t{0}下载失败！".format(keyUrl))
             logFile.write("\t{0}下载失败！".format(keyUrl))
-    return response.text
+    return response.content
 
 # 3、多线程下载ts流
 def mutliDownloadTs(playlist):
@@ -239,7 +242,11 @@ def downloadTs(playlist, index):
         if playlist[index].startswith("http"):
             tsUrl = playlist[index]
         else:
-            tsUrl = rootUrlPath + "/" + playlist[index]
+            if playlist[index].find('/') < 0:
+                tsUrl = rootUrlPath + "/" + playlist[index]
+            else:
+                o = urlparse(rootUrlPath)
+                tsUrl = o.scheme + "://" + o.hostname + playlist[index]
         try:
             #print("tsUrl:" + tsUrl)
             response = requests.get(tsUrl, timeout=5, headers=headers, stream=True, verify=False)
@@ -385,13 +392,20 @@ def m3u8VideoDownloader():
             return False
         # 如果key的url是相对路径，加上m3u8Url的路径
         keyUrl = key.uri
-        if not keyUrl.startswith("http"):
-            o = urlparse(m3u8Url)
-            #keyUrl = m3u8Url.replace("index.m3u8", keyUrl)
-            keyUrl = o.scheme + "://" + o.hostname + keyUrl
+        keyText = None
         print("\t2、开始下载key...")
         logFile.write("\t2、开始下载key...\n")
-        keyText = getKey(keyUrl)
+        if not keyUrl.startswith("http"):
+            if '/' == keyUrl[0:1]:
+                o = urlparse(m3u8Url)
+                #keyUrl = m3u8Url.replace("index.m3u8", keyUrl)
+                keyUrl = o.scheme + "://" + o.hostname + keyUrl
+            else:
+                keyUrl = m3u8Url[0:m3u8Url.rindex('/') + 1] +keyUrl
+
+            keyText = getKey(keyUrl)
+        else:
+            keyText = getKey(keyUrl)
         if keyText is None:
             return False
         # 判断是否有偏移量
@@ -400,11 +414,11 @@ def m3u8VideoDownloader():
             if(key.iv[0:2] == '0x'):
                 aesiv = hexStringTobytes(key.iv[2:])
             else:
-                aesiv =  bytes(key.iv, encoding='utf8')
+                aesiv = bytes(key.iv, encoding='utf8')
                 
-            cryptor = AES.new(bytes(keyText, encoding='utf8'), AES.MODE_CBC, aesiv)
+            cryptor = AES.new(keyText, AES.MODE_CBC, aesiv)
         else:
-            cryptor = AES.new(bytes(keyText, encoding='utf8'), AES.MODE_CBC, bytes(keyText, encoding='utf8'))
+            cryptor = AES.new(keyText, AES.MODE_CBC, keyText)
     # 3、下载ts
     print("\t3、开始下载ts...")
     logFile.write("\t3、开始下载ts...\n")
