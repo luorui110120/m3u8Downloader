@@ -242,7 +242,7 @@ def downloadTs(playlist, index):
         if playlist[index].startswith("http"):
             tsUrl = playlist[index]
         else:
-            if playlist[index].find('/') < 0:
+            if playlist[index][0:1] != '/':
                 tsUrl = rootUrlPath + "/" + playlist[index]
             else:
                 o = urlparse(rootUrlPath)
