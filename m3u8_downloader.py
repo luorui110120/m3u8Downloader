@@ -303,10 +303,10 @@ def mergeTs(tsFileDir, outputFilePath, cryptor, count):
             else:
                 outputFp.write(cryptor.decrypt(fileData))
         except Exception as exception:
-            inputFp.close()
-            outputFp.close()
+            #inputFp.close()
+            #outputFp.close()
             print(exception)
-            return False
+            #return False
         inputFp.close()
     print("")
     outputFp.close()
