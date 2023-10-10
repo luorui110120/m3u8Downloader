@@ -4,7 +4,7 @@
 
 
 
-import os
+import os,shutil
 import sys
 import m3u8
 import time
@@ -443,7 +443,8 @@ def m3u8VideoDownloader():
     logFile.write("\t5、开始mp4转换...\n")
     ### 当碰到ts 后缀 不转化mp4
     if title[-4:] == '.flv':
-        os.system('mv ' + cachePath + "/cache.flv" + ' ' + saveRootDirPath + "/" + title)
+        #os.system('mv ' + cachePath + "/cache.flv" + ' ' + saveRootDirPath + "/" + title)
+        shutil.move(cachePath + "/cache.flv", saveRootDirPath + "/" + title)
     else:
         if not ffmpegConvertToMp4(cachePath + "/cache.flv", saveRootDirPath + "/" + title + ".mp4"):
             return False
