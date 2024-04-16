@@ -132,6 +132,8 @@ def getM3u8Info():
         print("\t{0}为多级码流！".format(m3u8Url))
         logFile.write("\t{0}为多级码流！".format(m3u8Url))
         for rowData in response.text.split('\n'):
+            ## 删除不可见
+            rowData = rowData.strip()
             # 寻找响应内容的中的m3u8
             if rowData.endswith(".m3u8"):
                 o = urlparse(m3u8Url)
