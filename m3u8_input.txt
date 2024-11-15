@@ -1,2 +1,2 @@
-03,https://data.m3u8.in/lzm3u8/cache/68613ac692b764658e500729b166d3e8.m3u8
-04,https://data.m3u8.in/lzm3u8/cache/1d8af88f2c0de00e2a56addee23f75ff.m3u8
+gss,https://svipsvip.ffzyread1.com/20241107/33222_6375d77e/index.m3u8
+

@@ -18,6 +18,7 @@ from urllib3.poolmanager import PoolManager
 import ssl
 from urllib.parse import urlparse
 from urllib.request import urlopen
+import pyperclip
 
 ###关闭警告
 requests.packages.urllib3.disable_warnings()
@@ -70,7 +71,7 @@ sumCount = 0
 # 已处理的ts
 doneCount = 0
 # cache path
-cachePath = saveRootDirPath + "/cache"
+cachePath = saveRootDirPath + "/cache" + str(int(time.time()))
 # log path
 logPath = cachePath + "/log.log"
 # log file
@@ -374,6 +375,7 @@ def m3u8VideoDownloader():
     global rootUrlPath
     # 1、下载m3u8
     print("\t1、开始下载m3u8...")
+    #cachePath += str(int(time.time()))
     logFile.write("\t1、开始下载m3u8...\n")
     m3u8Info = getM3u8Info()
     if m3u8Info is None:
@@ -555,18 +557,25 @@ def main(argv):
     m3u8_in_url = ''
     outputfile = ''
     try:
-      opts, args = getopt.getopt(argv,"h:i:o:",['help',"ifile=","ofile="])
+      opts, args = getopt.getopt(argv,"hi:o:p",['help',"ifile=","ofile=","paste"])
     except getopt.GetoptError:
       print('m3u8_download.py -i url -o filename')
       sys.exit(2)
     for opt, arg in opts:
-      if opt in ('-h', 'help'):
-         print('m3u8_download.py -i url -o filename')
-         sys.exit()
-      elif opt in ("-i", "--ifile"):
-         m3u8_in_url = arg
-      elif opt in ("-o", "--ofile"):
-         outputfile = arg
+        if opt in ('-h', 'help'):
+            print('m3u8_download.py -i url -o filename')
+            sys.exit()
+        elif opt in ("-i", "--ifile"):
+            m3u8_in_url = arg
+        elif opt in ("-o", "--ofile"):
+            outputfile = arg
+        elif opt in ("-p", "--paste"):
+            m3u8_in_url = pyperclip.paste()
+            outputfile = str(int(time.time()))
+            if(m3u8_in_url[0:4] != 'http'):
+                print("error pyperclip input http addr")
+                sys.exit(2)
+            
     # 设置error的m3u8 url输出
     errorM3u8InfoFp = open(errorM3u8InfoDirPath, "a+", encoding="utf-8")
     # 设置log file
