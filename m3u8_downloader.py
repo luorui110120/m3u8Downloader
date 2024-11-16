@@ -453,6 +453,8 @@ def m3u8VideoDownloader():
         if not ffmpegConvertToMp4(cachePath + "/cache.flv", saveRootDirPath + "/" + title + ".mp4"):
             return False
     # 6.清空cache 文件
+    if sys.platform.startswith("win"):
+        logFile.close()
     removeTsDir(cachePath)
     return True
 
@@ -484,8 +486,9 @@ def donwloadUrl(url_path, outfile):
         logFile.write("{0} 开始下载:\n".format(url_path))
         if m3u8VideoDownloader():
             # 成功下载完一个m3u8则清空logFile
-            logFile.seek(0)
-            logFile.truncate()
+            if not sys.platform.startswith("win"):
+                logFile.seek(0)
+                logFile.truncate()
             print("{0} 下载成功！".format(url_path))
         else:
             errorM3u8InfoFp.write(title + "," + url_path + '\n')
