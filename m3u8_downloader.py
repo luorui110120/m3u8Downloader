@@ -18,7 +18,7 @@ from urllib3.poolmanager import PoolManager
 import ssl
 from urllib.parse import urlparse
 from urllib.request import urlopen
-import pyperclip
+import pyperclip,subprocess
 
 ###关闭警告
 requests.packages.urllib3.disable_warnings()
@@ -573,7 +573,15 @@ def main(argv):
         elif opt in ("-o", "--ofile"):
             outputfile = arg
         elif opt in ("-p", "--paste"):
-            m3u8_in_url = pyperclip.paste()
+            try:
+                m3u8_in_url = pyperclip.paste()
+            except Exception as e:
+                ###兼容termux环境
+                if os.system('termux-clipboard-get') == 0:
+                    m3u8_in_url = subprocess.getoutput("termux-clipboard-get").strip();
+                else:
+                    print(e)
+                    exit()
             outputfile = str(int(time.time()))
             if(m3u8_in_url[0:4] != 'http'):
                 print("error pyperclip input http addr")
