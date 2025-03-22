@@ -88,6 +88,14 @@ def hexStringTobytes(str):
         return bytes.fromhex(str)
     else:
         return str.decode('hex')
+def m3u8_is_variant(instr):
+    for rowData in instr.split('\n'):
+            ## 删除不可见
+            rowData = rowData.strip()
+            # 寻找响应内容的中的m3u8
+            if rowData.endswith(".m3u8"):
+                return True
+    return False
 # 1、下载m3u8文件
 def getM3u8Info():
     global m3u8Url
@@ -129,7 +137,7 @@ def getM3u8Info():
     # 解析m3u8中的内容
     m3u8Info = m3u8.loads(response.text)
     # 有可能m3u8Url是一个多级码流
-    if m3u8Info.is_variant:
+    if m3u8Info.is_variant or m3u8_is_variant(response.text):
         print("\t{0}为多级码流！".format(m3u8Url))
         logFile.write("\t{0}为多级码流！".format(m3u8Url))
         for rowData in response.text.split('\n'):
@@ -140,6 +148,8 @@ def getM3u8Info():
                 o = urlparse(m3u8Url)
                 if '/' == rowData[0:1]:
                     m3u8Url = m3u8Url[0:m3u8Url.find(o.path)] + rowData
+                elif rowData.startswith('https://') or rowData.startswith('http://'):
+                    m3u8Url = rowData
                 else:
                     m3u8Url = m3u8Url[0:m3u8Url.rindex('/')] + '/' + rowData
                 #m3u8Url = m3u8Url.replace("index.m3u8", rowData)
