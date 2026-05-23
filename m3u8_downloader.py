@@ -29,6 +29,11 @@ headers = {
     #"Accept-Language": "zh-CN,zh;q=0.9",
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 5.0; zh-CN; HTC 802t Build/KTU84L) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.108 Quark/4.3.3.145 Mobile Safari/537.36"
 }
+proxies = {
+    "http": None,
+    "https": None,
+
+}
 
 class MyAdapter(HTTPAdapter):
     def init_poolmanager(self, connections, maxsize, block=False):
@@ -109,7 +114,7 @@ def getM3u8Info():
             return None
         tryCount = tryCount - 1
         try:
-            response = requests.get(m3u8Url, headers=headers, timeout=20, verify=False)
+            response = requests.get(m3u8Url, headers=headers, timeout=20, verify=False, proxies=proxies)
             if response.status_code == 301:
                 nowM3u8Url = response.headers["location"]
                 print("\t{0}重定向至{1}！".format(m3u8Url, nowM3u8Url))
@@ -173,7 +178,7 @@ def getKey(keyUrl):
             return None
         tryCount = tryCount - 1
         try:
-            response = requests.get(keyUrl, headers=headers, timeout=20, allow_redirects=True,verify=False)
+            response = requests.get(keyUrl, headers=headers, timeout=20, allow_redirects=True, verify=False, proxies=proxies)
             if response.status_code == 301:
                 nowKeyUrl = response.headers["location"]
                 print("\t{0}重定向至{1}！".format(keyUrl, nowKeyUrl))
@@ -262,7 +267,7 @@ def downloadTs(playlist, index):
                 tsUrl = o.scheme + "://" + o.hostname + playlist[index]
         try:
             #print("tsUrl:" + tsUrl)
-            response = requests.get(tsUrl, timeout=5, headers=headers, stream=True, verify=False)
+            response = requests.get(tsUrl, timeout=5, headers=headers, stream=True, verify=False, proxies=proxies)
             if response.status_code == 200:
                 expected_length = int(response.headers.get('Content-Length'))
                 actual_length = len(response.content)
