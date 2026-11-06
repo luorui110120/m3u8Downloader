@@ -405,39 +405,44 @@ def m3u8VideoDownloader():
     if (len(m3u8Info.keys) != 0) and (m3u8Info.keys[0] is not None):
         # 默认选择第一个key，且AES-128算法
         key = m3u8Info.keys[0]
-        if key.method != "AES-128":
+        if key.method == "NONE":
+            # METHOD=NONE 表示未加密，无需下载key，直接明文下载
+            print("\t该m3u8未加密（METHOD=NONE），跳过解密！")
+            logFile.write("\t该m3u8未加密（METHOD=NONE），跳过解密！\n")
+        elif key.method != "AES-128":
             print("\t{0}不支持的解密方式！".format(key.method))
             logFile.write("\t{0}不支持的解密方式！\n".format(key.method))
             return False
-        # 如果key的url是相对路径，加上m3u8Url的路径
-        keyUrl = key.uri
-        keyText = None
-        print("\t2、开始下载key...")
-        logFile.write("\t2、开始下载key...\n")
-        if not keyUrl.startswith("http"):
-            if '/' == keyUrl[0:1]:
-                o = urlparse(m3u8Url)
-                #keyUrl = m3u8Url.replace("index.m3u8", keyUrl)
-                keyUrl = o.scheme + "://" + o.hostname + keyUrl
-            else:
-                keyUrl = m3u8Url[0:m3u8Url.rindex('/') + 1] +keyUrl
+        else:
+            # 如果key的url是相对路径，加上m3u8Url的路径
+            keyUrl = key.uri
+            keyText = None
+            print("\t2、开始下载key...")
+            logFile.write("\t2、开始下载key...\n")
+            if not keyUrl.startswith("http"):
+                if '/' == keyUrl[0:1]:
+                    o = urlparse(m3u8Url)
+                    #keyUrl = m3u8Url.replace("index.m3u8", keyUrl)
+                    keyUrl = o.scheme + "://" + o.hostname + keyUrl
+                else:
+                    keyUrl = m3u8Url[0:m3u8Url.rindex('/') + 1] +keyUrl
 
-            keyText = getKey(keyUrl)
-        else:
-            keyText = getKey(keyUrl)
-        if keyText is None:
-            return False
-        # 判断是否有偏移量
-        if key.iv is not None:
-            aesiv = None
-            if(key.iv[0:2] == '0x'):
-                aesiv = hexStringTobytes(key.iv[2:])
+                keyText = getKey(keyUrl)
             else:
-                aesiv = bytes(key.iv, encoding='utf8')
-                
-            cryptor = AES.new(keyText, AES.MODE_CBC, aesiv)
-        else:
-            cryptor = AES.new(keyText, AES.MODE_CBC, keyText)
+                keyText = getKey(keyUrl)
+            if keyText is None:
+                return False
+            # 判断是否有偏移量
+            if key.iv is not None:
+                aesiv = None
+                if(key.iv[0:2] == '0x'):
+                    aesiv = hexStringTobytes(key.iv[2:])
+                else:
+                    aesiv = bytes(key.iv, encoding='utf8')
+
+                cryptor = AES.new(keyText, AES.MODE_CBC, aesiv)
+            else:
+                cryptor = AES.new(keyText, AES.MODE_CBC, keyText)
     # 3、下载ts
     print("\t3、开始下载ts...")
     logFile.write("\t3、开始下载ts...\n")
