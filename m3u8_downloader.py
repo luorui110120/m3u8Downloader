@@ -85,6 +85,8 @@ logFile = None
 downloadedBytes = 0
 # download speed
 downloadSpeed = 0
+# METHOD=NONE但分片实际AES加密时，探测到的兜底解密key
+noneMethodKey = None
 
 
 def hexStringTobytes(str):
@@ -230,6 +232,12 @@ def mutliDownloadTs(playlist):
         printProcessBar(sumCount, doneCount, 50, True)
     print("")
     return True
+# 判断数据是否为明文MPEG-TS（0x47同步字节按188字节间隔出现）
+def isPlainTs(data):
+    if len(data) >= 188 * 2:
+        return data[0] == 0x47 and data[188] == 0x47
+    return len(data) > 0 and data[0] == 0x47
+
 # 4、下载单个ts playlists[index]
 def downloadTs(playlist, index):
     magic_head = [bytes([0x89,0x47,0x49,0x46]),    ###gif
@@ -252,6 +260,7 @@ def downloadTs(playlist, index):
     global cachePath
     global rootUrlPath
     global downloadedBytes
+    global noneMethodKey
     succeed = False
     while not succeed:
         # 文件名格式为 "00000001.ts"，index不足8位补充0
@@ -276,23 +285,32 @@ def downloadTs(playlist, index):
                 if expected_length > actual_length:
                     raise Exception("分片下载不完整")
                 
+                # 部分站点声明METHOD=NONE却实际AES加密分片：
+                # 非明文TS且有兜底key时，尝试AES-128-CBC(零IV)解密
+                fileData = response.content
+                if (noneMethodKey is not None) and (not isPlainTs(fileData)) and (len(fileData) % 16 == 0):
+                    decryptData = AES.new(noneMethodKey, AES.MODE_CBC, b"\x00" * 16).decrypt(fileData)
+                    if isPlainTs(decryptData):
+                        fileData = decryptData
+                    else:
+                        logFile.write("\t分片{0:0>8} 兜底key解密后非TS数据，按原文保存！".format(index))
                 #### 判断是否是图片的文件头
                 for magickey in magic_head:
                     magiclen = len(magickey)
-                    find_head_flags = response.content[0:magiclen] == magickey
+                    find_head_flags = fileData[0:magiclen] == magickey
                     if find_head_flags:
                         break
                 ###删除图片文件头
                 if find_head_flags:
-                    findres = response.content.find(ffpmeg_magic)
+                    findres = fileData.find(ffpmeg_magic)
                     if findres < 0:
-                        findres = response.content.find(FFFF_magic)
+                        findres = fileData.find(FFFF_magic)
                     if findres > 0:
-                        outputFp.write(response.content[findres:])
+                        outputFp.write(fileData[findres:])
                     else:
-                        outputFp.write(response.content)
+                        outputFp.write(fileData)
                 else:
-                    outputFp.write(response.content)
+                    outputFp.write(fileData)
                 doneCount += 1
                 printProcessBar(sumCount, doneCount, 50, isPrintDownloadSpeed=True)
                 logFile.write("\t分片{0:0>8} url = {1} 下载成功！".format(index, tsUrl))
@@ -348,7 +366,8 @@ def ffmpegConvertToMp4(inputFilePath, ouputFilePath):
         print(inputFilePath + " 路径不存在！")
         logFile.write(inputFilePath + " 路径不存在！\n")
         return False
-    cmd = r'ffmpeg -i "{0}" -vcodec copy -acodec copy "{1}"'.format(inputFilePath, ouputFilePath)
+    # -y直接覆盖已存在的输出文件，-nostdin避免非交互环境下ffmpeg卡在覆盖确认(其退出码仍为0导致误报转换成功)
+    cmd = r'ffmpeg -y -nostdin -i "{0}" -vcodec copy -acodec copy "{1}"'.format(inputFilePath, ouputFilePath)
     if os.system(cmd) == 0:
         print(inputFilePath + "转换成功！")
         logFile.write(inputFilePath + "转换成功！\n")
@@ -388,6 +407,7 @@ def m3u8VideoDownloader():
     global downloadedBytes
     global downloadSpeed
     global rootUrlPath
+    global noneMethodKey
     # 1、下载m3u8
     print("\t1、开始下载m3u8...")
     #cachePath += str(int(time.time()))
@@ -406,9 +426,22 @@ def m3u8VideoDownloader():
         # 默认选择第一个key，且AES-128算法
         key = m3u8Info.keys[0]
         if key.method == "NONE":
-            # METHOD=NONE 表示未加密，无需下载key，直接明文下载
+            # METHOD=NONE 表示未加密，无需下载key
+            # 但部分站点会对分片实际AES加密却声明NONE（key按惯例放在m3u8同目录的key.key中），
+            # 这里探测兜底key，downloadTs中检测到密文分片时自动解密
             print("\t该m3u8未加密（METHOD=NONE），跳过解密！")
             logFile.write("\t该m3u8未加密（METHOD=NONE），跳过解密！\n")
+            noneMethodKey = None
+            probeKeyUrl = m3u8Url[0:m3u8Url.rindex('/') + 1] + "key.key"
+            try:
+                response = requests.get(probeKeyUrl, headers=headers, timeout=20, verify=False, proxies=proxies)
+                if response.status_code == 200 and len(response.content) == 16:
+                    noneMethodKey = response.content
+                    print("\t已探测到兜底key，将自动识别加密分片！")
+                    logFile.write("\t已探测到兜底key，将自动识别加密分片！\n")
+            except Exception as exception:
+                print(exception)
+                logFile.write("\t兜底key探测失败：{0}\n".format(exception))
         elif key.method != "AES-128":
             print("\t{0}不支持的解密方式！".format(key.method))
             logFile.write("\t{0}不支持的解密方式！\n".format(key.method))
